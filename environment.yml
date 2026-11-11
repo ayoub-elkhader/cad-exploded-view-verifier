@@ -1,0 +1,11 @@
+name: xview
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - pythonocc-core=7.9.0
+  - numpy
+  - pytest
+  - pip
+  - pip:
+      - -e .
