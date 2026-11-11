@@ -85,7 +85,8 @@ def in_contact(s1, s2, tol: float):
 
 
 def load_solids(step_path: str) -> list:
-    """Read a STEP file and return its individual solids (compounds are exploded)."""
+    """Read a STEP file and return its individual solids (compounds are exploded). A root
+    shape without any solid is returned as is."""
     from OCC.Core.STEPControl import STEPControl_Reader
     from OCC.Core.IFSelect import IFSelect_RetDone
     from OCC.Core.TopAbs import TopAbs_SOLID
@@ -103,9 +104,15 @@ def load_solids(step_path: str) -> list:
         if shape.IsNull():
             continue
         exp = TopExp_Explorer(shape, TopAbs_SOLID)
+        found = False
         while exp.More():
             solids.append(exp.Current())
+            found = True
             exp.Next()
+        if not found:
+            # no solid (open shell, surfaces): keep the raw shape; the verifier will
+            # abstain on it rather than ignore it
+            solids.append(shape)
     return solids
 
 

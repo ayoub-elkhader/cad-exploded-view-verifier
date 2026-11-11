@@ -57,6 +57,10 @@ exploded-view-verify --write-samples examples/
 exploded-view-verify my_assembly.step --disassembly --out plan.json
 exploded-view-verify my_assembly.step --check plan.json        # verify an existing plan
 exploded-view-verify my_assembly.step --proposer llm           # optional, needs LLM_API_KEY
+
+# public datasets (downloaded separately, see DATASETS.md)
+exploded-view-verify --fusion <fusion_root>/<assembly_id>/assembly.json --disassembly
+exploded-view-verify --automate <assemblies>/<assembly_id>.json --step-dir <step_folder> --disassembly
 ```
 
 ```python
@@ -77,18 +81,41 @@ verify_plan(asm, res.plan, details=details)     # {(part_a, part_b): verdict} fo
 | `shaft_stack` | 5 | the centroid explosion leaves 1 conflicting pair; one axial-spreading pass removes it | accepted after 2 verifier calls, disassembly found |
 | `caged_cube` | 2 | a cube floating in a closed box: no interference, but no straight-line way out | accepted, **no disassembly found** (both parts stuck) |
 
+Real assemblies bundled in `examples/`, copied unchanged from public datasets (they keep their own licenses):
+
+| Example | Parts | What happens | Result |
+|---|---|---|---|
+| AutoMate `0c4c5dd5…` | 3 | the centroid explosion is already free of interference | accepted, disassembly found |
+| AutoMate `0b7302d4…` | 4 | 1 conflicting pair after the centroid explosion; one axial-spreading pass removes it | accepted, disassembly found |
+| AutoMate `d0582033…` | 8 | 3 conflicting pairs after the centroid explosion; one axial-spreading pass removes them | accepted, disassembly found |
+| Zenodo `aa-swn2` | 3 | the centroid explosion is already free of interference | accepted |
+
+## Datasets
+
+The thesis evaluated the method on Fusion 360 Gallery Assembly, AutoMate and a reassembly set published on Zenodo. [DATASETS.md](DATASETS.md) gives:
+- the sources, licenses and citations;
+- how to download each dataset;
+- the lists of the assemblies used (`benchmarks/`);
+- `scripts/run_benchmark.py`, which runs the deterministic pipeline on such a list and writes one CSV row per assembly.
+
+Fusion 360 Gallery data is not redistributed: its license allows non-commercial research use only. AutoMate (CC0) and the Zenodo set (CC BY 4.0) are represented by the few examples above.
+
 ## Tests
 
 ```bash
 pytest
 ```
 
-44 tests pass locally (Windows 10, Python 3.10, pythonocc-core 7.9.0). They cover:
+51 tests pass locally (Windows 10, Python 3.10, pythonocc-core 7.9.0). They cover:
 - 27 verifier tests:
   - cases with a known mathematical answer: cubes at given gaps, nested cubes, a hollow box, cylinders in holes with 1 mm / 0.05 mm clearance or a press fit, nested spheres, a torus, plates tangent to curved faces between mesh nodes, untriangulated faces;
   - abstention when every exact distance fails;
 - the triangle–triangle distance against dense sampling;
-- the repair loop, the proposers, the disassembly test, the CLI and the parsing of LLM answers (without any network call).
+- the repair loop, the proposers, the disassembly test, the CLI and the parsing of LLM answers (without any network call);
+- the Fusion and AutoMate loaders, on small files written in their formats (transform composition, unit conversion, skipped hidden occurrences);
+- the bundled AutoMate and Zenodo examples (the results in the table above).
+
+I also checked the loaders against the original research code on 3 Fusion and 3 AutoMate assemblies: they load the same parts with the same bounding boxes. That check needs the full datasets, so it is not part of the test suite.
 
 CI runs the same tests on Python 3.10–3.12 with conda-forge.
 
@@ -97,9 +124,9 @@ CI runs the same tests on Python 3.10–3.12 with conda-forge.
 - **Rigid translations only.** Rotations, screw motions, flexible parts and fasteners are not modelled.
 - **Discrete checks.** The disassembly test samples positions along each path, so it does not prove continuous clearance between two samples. "No order found" means that no straight-line removal exists along the tried directions; it does not prove that disassembly is impossible.
 - **The verifier is conservative, not certified.** It depends on OCCT and on meshes of a given deflection. Its known failure modes are handled by abstention, but abstention can reject valid views.
-- **Simple STEP loading.** Every solid becomes one part: product structure, names and materials are not read.
+- **Simple STEP loading.** For plain STEP files, every solid becomes one part: product structure, names and materials are not read. The Fusion and AutoMate loaders use the occurrence structure of those datasets.
 - **Cost.** Exact distances are expensive, and large assemblies (hundreds of parts) can take minutes per check.
-- **No datasets in this repository.** The thesis evaluated the method on public datasets (Fusion 360 Gallery Assembly, AutoMate) that cannot be redistributed here, so those experiments are not reproduced in this repository.
+- **Thesis numbers not reproduced here.** The evaluation of the thesis ran on 1,894 public assemblies. This repository gives the loaders, the lists and a script to run the pipeline on them. It does not include those runs, and it makes no claim that it reproduces the thesis numbers.
 
 ## Related repositories
 

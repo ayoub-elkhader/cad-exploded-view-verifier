@@ -5,6 +5,8 @@
     exploded-view-verify --sample shaft_stack
     exploded-view-verify --write-samples examples/
     exploded-view-verify assembly.step --check plan.json
+    exploded-view-verify --fusion a1.0.0_04/53060_3cef188a/assembly.json
+    exploded-view-verify --automate automate_asm/<id>.json --step-dir automate_step/
 """
 from __future__ import annotations
 
@@ -38,6 +40,9 @@ def main(argv=None):
                                  description="Explode a STEP assembly and verify the result.")
     ap.add_argument("step", nargs="?", help="STEP file (one solid = one part)")
     ap.add_argument("--sample", choices=sorted(S.SAMPLES), help="use a built-in synthetic assembly")
+    ap.add_argument("--fusion", metavar="ASSEMBLY_JSON", help="Fusion 360 Gallery assembly.json")
+    ap.add_argument("--automate", metavar="ASSEMBLY_JSON", help="AutoMate assembly JSON (needs --step-dir)")
+    ap.add_argument("--step-dir", help="folder of AutoMate part STEP files")
     ap.add_argument("--write-samples", metavar="DIR", help="write the built-in samples as STEP files and exit")
     ap.add_argument("--check", metavar="PLAN_JSON", help="only verify an existing plan")
     ap.add_argument("--factor", type=float, default=2.0)
@@ -62,10 +67,23 @@ def main(argv=None):
 
     if a.sample:
         assembly, case = S.build(a.sample, a.deflection), a.sample
+    elif a.fusion:
+        from .datasets import load_fusion
+        assembly, _ = load_fusion(a.fusion, deflection=a.deflection)
+        case = os.path.basename(os.path.dirname(os.path.abspath(a.fusion)))
+    elif a.automate:
+        if not a.step_dir:
+            ap.error("--automate needs --step-dir")
+        from .datasets import load_automate
+        assembly, _ = load_automate(a.automate, a.step_dir, deflection=a.deflection)
+        case = os.path.splitext(os.path.basename(a.automate))[0]
     elif a.step:
         assembly, case = G.load_step_assembly(a.step, a.deflection), os.path.basename(a.step)
     else:
-        ap.error("give a STEP file or --sample")
+        ap.error("give a STEP file, --sample, --fusion or --automate")
+    if len(assembly) < 2:
+        print(f"{case}: fewer than 2 parts loaded, nothing to explode")
+        return 2
     print(f"{case}: {len(assembly)} parts, oracle {O.ORACLE_VERSION}, tol {a.tol} mm")
 
     if a.check:
