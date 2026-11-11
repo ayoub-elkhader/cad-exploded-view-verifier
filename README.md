@@ -6,6 +6,17 @@ An exploded view moves every part of an assembly away from the others. A simple 
 
 It is the core of my master's research on exploded views of CAD assemblies with language models, whose central argument is that the geometric verifier, not the proposer (language model or not), is what makes the final views interference-free.
 
+![Command-line output on an AutoMate assembly and on the caged_cube sample](docs/cli_session.png)
+
+*Real output of the command line, rendered as an image; the AutoMate file name is shortened in the command shown.*
+
+- **Top**: an 8-part assembly from AutoMate (CC0, bundled in `examples/`). The centroid explosion leaves 3 conflicting pairs, one axial-spreading pass removes them, and the verifier accepts the view.
+- **Bottom**: a cube floating in a closed box. Its exploded view has no interference, yet the cube cannot be taken out along a straight line. Both checks are needed.
+
+![Verified exploded view of the same AutoMate assembly](docs/exploded_view_automate.png)
+
+*The accepted plan for the same assembly, displayed by [cad-exploded-view-studio](https://github.com/ayoub-elkhader/cad-exploded-view-studio).*
+
 ## How it works
 
 ```
